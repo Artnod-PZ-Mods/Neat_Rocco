@@ -273,8 +273,8 @@ function NR_PlantPanel:render()
                 xPivot, valX, curY + textOffY, 0.7, op.vr, op.vg, op.vb)
             curY = curY + lh
         elseif op.t == "text" then
-            self:drawText(op.text, pad, curY + textOffY,
-                          op.r, op.g, op.b, 1)
+            ---@diagnostic disable-next-line: redundant-parameter
+            self:drawText(op.text, pad, curY + textOffY, op.r, op.g, op.b, 1)
             curY = curY + lh
         elseif op.t == "val" then
             ---@diagnostic disable-next-line: redundant-parameter

@@ -576,7 +576,7 @@ end
 -- ######################
 -- ### VehicleMechanics ###
 -- ######################
-require "NeatRocco/NR_Mech/NR_VehicleMechanicsPanel"
+require "NeatRocco/NR_Mech/NR_VehicleMechanicsPanel_v2"
 -- Cache vanilla functions before patching
 ISOpenMechanicsUIAction._NR_old_perform         = ISOpenMechanicsUIAction._NR_old_perform         or ISOpenMechanicsUIAction.perform
 ISVehicleMechanics._NR_old_OnMechanicActionDone = ISVehicleMechanics._NR_old_OnMechanicActionDone or ISVehicleMechanics.OnMechanicActionDone
