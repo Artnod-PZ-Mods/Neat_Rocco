@@ -1,0 +1,129 @@
+version=1
+id=3723726293
+title=Neat Rocco's UI [B42]
+description=[h2]Build Support: B42.17 to B42.18 - Build 42 only[/h2]
+description=(Build 42 only: Singleplayer tested / Multiplayer not tested)
+description=
+description=Redesigns in-game vanilla menus with a clean, modern interface inspired by the NeatUI style. Icon buttons, consistent colors, and a layout that stays out of your way.
+description=
+description=[hr]
+description=[h2]Why Rocco's UI?[/h2]
+description=[i]"Rocco's UI" is a tribute to Rocco, the creator of these mods and whose work made this mod possible:[/i]
+description=[list]
+description=[*][url=https://steamcommunity.com/sharedfiles/filedetails/?id=3508537032]NeatUI Framework[/url]
+description=[*][url=https://steamcommunity.com/sharedfiles/filedetails/?id=3502080466]Neat Crafting[/url]
+description=[*][url=https://steamcommunity.com/sharedfiles/filedetails/?id=3536052310]Neat Building[/url]
+description=[*] and more
+description=[/list]
+description=
+description=[hr]
+description=[h2]Requires:[/h2]
+description=[url=https://steamcommunity.com/sharedfiles/filedetails/?id=3508537032]NeatUI Framework[/url] must be enabled and loaded before this mod.
+description=
+description=[h2]Incompatible:[/h2]
+description=If you have any of these mods installed, disable them. They are all included in Neat Rocco's UI:
+description=[list]
+description=[*][url=https://steamcommunity.com/sharedfiles/filedetails/?id=3691034292]Neat Livestock[/url]
+description=[*][url=https://steamcommunity.com/sharedfiles/filedetails/?id=3692364630]Neat Butcher Hook[/url]
+description=[*][url=https://steamcommunity.com/sharedfiles/filedetails/?id=3693240972]Neat Hutch[/url]
+description=[*][url=https://steamcommunity.com/sharedfiles/filedetails/?id=3702056978]Neat Generator[/url]
+description=[*][url=https://steamcommunity.com/sharedfiles/filedetails/?id=3702689769]Neat Bake[/url]
+description=[/list]
+description=
+description=[hr]
+description=[h2]What does this mod replace?[/h2]
+description=
+description=[b]Animals & Livestock[/b]
+description=[list]
+description=[*]Animal info window
+description=[*]Animal tracks info
+description=[*]Butcher hook
+description=[*]Chicken coop (hutch)
+description=[*]Feeding trough window
+description=[*]Livestock zone panels (manage your animal zones)
+description=[*]Trailer loading window
+description=[/list]
+description=
+description=[b]Cooking[/b]
+description=[list]
+description=[*]BBQ
+description=[*]Microwave
+description=[*]Oven
+description=[/list]
+description=
+description=[b]Farming & Foraging[/b]
+description=[list]
+description=[*]Foraging search panel
+description=[*]Plant info panel
+description=[/list]
+description=
+description=[b]Character[/b]
+description=[list]
+description=[*]Character info window (stats, health, skills, clothing)
+description=[*]Clothing viewer
+description=[*]Fitness training window
+description=[*]Learning window (books, recipes, media, farming)
+description=[/list]
+description=
+description=[b]Vehicles[/b]
+description=[list]
+description=[*]Vehicle mechanics panel
+description=[/list]
+description=
+description=[b]World objects[/b]
+description=[list]
+description=[*]Fluid container info
+description=[*]Fluid transfer panel
+description=[*]Generator info
+description=[/list]
+description=
+description=[b]Popups & Dialogs[/b]
+description=[list]
+description=[*]Alarm clock dialog
+description=[*]Bomb timer dialog
+description=[*]Color picker
+description=[*]Confirmation dialogs (yes/no, ok)
+description=[*]Digital code lock
+description=[*]Info / rich text popups
+description=[*]Text input dialogs
+description=[/list]
+description=
+description=[hr]
+description=[h2]Toggle on or off at any time[/h2]
+description=You can switch back to the vanilla UI without disabling the mod:
+description=Options → Mod Options → Neat Rocco's UI → Use Neat Rocco's UI
+description=
+description=[hr]
+description=[h2]Mod Compatibility[/h2]
+description=Mods that add content to the vanilla windows replaced by this mod may not be fully compatible.
+description=To request compatibility with a specific mod, post in the [url=https://steamcommunity.com/workshop/filedetails/discussion/3723726293/844005624123524284/]Mod Compatibility Requests[/url] discussion.
+description=
+description=[b]Compatible mods (tested):[/b]
+description=[list]
+description=[*][url=https://steamcommunity.com/sharedfiles/filedetails/?id=3721829036]STA Better Hutches[/url]
+description=[*][url=https://steamcommunity.com/sharedfiles/filedetails/?id=3388721641]Auto-Cook[/url]
+description=[*][url=https://steamcommunity.com/sharedfiles/filedetails/?id=3470852353]Improved Farming Info Window[/url]
+description=[/list]
+description=
+description=[hr]
+description=[h2]Work In Progress[/h2]
+description=[list]
+description=[*]Retract button missing for some panels
+description=[*]Re-open panels at same location
+description=[/list]
+description=
+description=[hr]
+description=[h2]Credits[/h2]
+description=Mod by ArtNod
+description=
+description=Visually inspired by [url=https://steamcommunity.com/sharedfiles/filedetails/?id=3502080466]Neat Crafting[/url] and [url=https://steamcommunity.com/sharedfiles/filedetails/?id=3536052310]Neat Building[/url] by Rocco and Afyrmo.
+description=UI components provided by [url=https://steamcommunity.com/sharedfiles/filedetails/?id=3508537032]NeatUI Framework[/url] by Rocco.
+description=Many thanks to Rocco and Afyrmo for their open framework and design work.
+description=
+description=[h2]Permissions[/h2]
+description=You are free to extract and use any content from this mod without asking for permission.
+description=If you want to republish this mod, you need to follow these rules:
+description=1. There must be substantial and important improvements.
+description=2. If this mod has not been updated for a long time and has caused many issues, you may modify and republish it.
+tags=Build 42;Interface;Multiplayer;QoL
+visibility=public

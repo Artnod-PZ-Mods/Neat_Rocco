@@ -1,0 +1,11 @@
+name=Neat Rocco's UI
+id=Neat_Rocco
+icon=icon.png
+poster=poster.png
+description=Redesigns in-game vanilla menus to match the NeatUI theme.
+author=ArtNod
+modversion=1.0.3
+versionMin=42.15
+versionMax=42.18
+incompatible=\Neat_Livestock,\Neat_ButcherHook,\Neat_Hutch,\Neat_Generator,\NeatBake
+require=\NeatUI_Framework
