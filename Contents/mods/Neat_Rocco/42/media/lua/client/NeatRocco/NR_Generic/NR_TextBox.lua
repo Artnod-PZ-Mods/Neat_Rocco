@@ -24,9 +24,8 @@ function NR_TextBox:initialise()
     local btnSz = NR_Config.buttonSize
     local btnY  = self.height - btnSz - pad
 
-    -- Hide vanilla buttons — joypad still uses them via setISButtonForA/B
-    self.yes:setVisible(false)
-    self.no:setVisible(false)
+    -- Visibility of vanilla vs NI buttons is driven by ensureIcons() at each prerender,
+    -- so the dialog always shows usable buttons (vanilla as fallback while textures load).
 
     -- OK icon button — mouse only (green)
     local okX = math.floor(self.width / 2) - btnSz - pad
@@ -50,6 +49,29 @@ function NR_TextBox:initialise()
 end
 
 -- ----------------------------------------------------------------------------------------------------- --
+-- ensureIcons — retry getTexture if textures were not ready at initialise()
+-- ----------------------------------------------------------------------------------------------------- --
+
+function NR_TextBox:ensureIcons()
+    if self.iconOk and not self.iconOk.iconTexture then
+        self.iconOk:setIcon(getTexture("media/ui/NeatUI/Icon/Icon_True.png"))
+    end
+    if self.iconCancel and not self.iconCancel.iconTexture then
+        self.iconCancel:setIcon(getTexture("media/ui/NeatUI/Icon/Icon_False.png"))
+    end
+
+    local ready = (self.iconOk and self.iconOk.iconTexture
+              and self.iconCancel and self.iconCancel.iconTexture) ~= nil
+    if ready ~= self._iconsReady then
+        self._iconsReady = ready
+        self.yes:setVisible(not ready)
+        self.no:setVisible(not ready)
+        self.iconOk:setVisible(ready)
+        self.iconCancel:setVisible(ready)
+    end
+end
+
+-- ----------------------------------------------------------------------------------------------------- --
 -- updateButtons — mirror vanilla yes.enable to iconOk
 -- ----------------------------------------------------------------------------------------------------- --
 
@@ -70,6 +92,8 @@ end
 -- ----------------------------------------------------------------------------------------------------- --
 
 function NR_TextBox:prerender()
+    self:ensureIcons()
+
     -- Main panel background
     local bg = NinePatchTexture.getSharedTexture("media/ui/NeatUI/DefaultPanel/MainPanelBG_RoundTop.png")
     if bg then

@@ -3,7 +3,7 @@
 -- Displays and manages livestock designation zones.
 
 require "NeatRocco/NR_Utils/NR_BasePanel"
-require "NeatRocco/NR_Utils/NR_ModalRichText"
+require "NeatRocco/NR_Generic/NR_ModalRichText"
 require "NeatRocco/NR_Utils/NR_SelectableList"
 require "NeatRocco/NR_Utils/NR_ResizeWidget"
 
