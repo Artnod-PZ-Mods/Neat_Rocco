@@ -1,81 +1,26 @@
 -- NR_ModalRichText.lua
 -- NeatUI-styled override of ISModalRichText.
--- Derives from ISModalRichText so all logic (rich text, scroll, joypad, callbacks) is inherited.
--- Strategy: call ISModalRichText.initialise() to create vanilla ok ISButton (needed for joypad),
--- hide it, add NR_Header at top with close button, move chatText below header.
+-- No header: the panel is a rounded NeatUI rectangle holding the rich text
+-- (full raw text, no title/body split) and one or two NI_SquareButton at the
+-- bottom:
+--   yesno=false → single green OK button, centered
+--   yesno=true  → green YES on the left, red NO on the right
+-- Visibility of vanilla buttons vs NI is driven by ensureIcons() at each
+-- prerender (vanilla shown as fallback while NeatUI icon textures load).
 
 require "NeatRocco/NR_Config"
-require "NeatRocco/NR_Utils/NR_Header"
-require "NeatRocco/NR_Utils/NR_DrawUtils"
 require "NeatRocco/NR_Utils/NR_ScrollingList"
+
+local NI_SquareButton = require("NeatUI_Framework/UI/NI_SquareButton")
 
 NR_ModalRichText = ISModalRichText:derive("NR_ModalRichText")
 
 -- ----------------------------------------------------------------------------------------------------- --
--- Text analysis helpers (static)
+-- bottomReserve — vertical space below chatText for the buttons row.
 -- ----------------------------------------------------------------------------------------------------- --
 
-local CANDIDATE_PATTERN  = "<SIZE:medium>%s*(.-)%s*<LINE>"
-local BODY_PATTERN_A     = "<LEFT>%s*<SIZE:small>%s*(.+)$"
-local BODY_PATTERN_B     = "<SIZE:small>%s*<LEFT>%s*(.+)$"
-local LONG_TITLE_THRESHOLD = 30
-
-function NR_ModalRichText.getTitle(rawText)
-    return rawText:match(CANDIDATE_PATTERN) or ""
-end
-
-function NR_ModalRichText.getBody(rawText)
-    return rawText:match(BODY_PATTERN_A)
-        or rawText:match(BODY_PATTERN_B)
-        or rawText
-end
-function NR_ModalRichText.hasTitle(rawText)
-    return NR_ModalRichText.getTitle(rawText) ~= ""
-end
-
-function NR_ModalRichText.isLongTitle(rawText)
-    return #NR_ModalRichText.getTitle(rawText) > LONG_TITLE_THRESHOLD
-end
-
-
-
--- ----------------------------------------------------------------------------------------------------- --
--- Static constructor
--- no title in text    → vanilla fallback key as title, full raw text as body
--- long title in text  → vanilla fallback key as title, full raw text as body
--- short title in text → extracted title in header, body without title
--- ----------------------------------------------------------------------------------------------------- --
-
-function NR_ModalRichText.newFromRichText(x, y, w, h, rawText, fallbackTitle)
-    local title, body
-    if NR_ModalRichText.hasTitle(rawText) then
-        if NR_ModalRichText.isLongTitle(rawText) then
-            title = fallbackTitle or ""
-            body  = rawText
-        else
-            title = NR_ModalRichText.getTitle(rawText)
-            body  = NR_ModalRichText.getBody(rawText)
-        end
-    else
-        title = fallbackTitle or ""
-        body  = rawText
-    end
-    local ui = NR_ModalRichText:new(x, y, w, h, body, false)
-    ui.windowTitle = title
-    return ui
-end
-
--- ----------------------------------------------------------------------------------------------------- --
--- Title (used by NR_Header)
--- ----------------------------------------------------------------------------------------------------- --
-
-function NR_ModalRichText:getWindowTitle()
-    return self.windowTitle or ""
-end
-
--- close() called by NR_Header X button
-function NR_ModalRichText:close()
-    ISModalRichText.onClick(self, { internal = "OK" })
+function NR_ModalRichText:bottomReserve()
+    return NR_Config.buttonSize + NR_Config.padding * 2
 end
 
 -- ----------------------------------------------------------------------------------------------------- --
@@ -83,70 +28,162 @@ end
 -- ----------------------------------------------------------------------------------------------------- --
 
 function NR_ModalRichText:initialise()
-    -- Create vanilla ok ISButton + chatText (needed for joypad + scroll logic)
+    -- Create vanilla ok (or yes/no) ISButton + chatText (needed for joypad + scroll logic)
     ISModalRichText.initialise(self)
 
-    local hh = NR_Config.headerHeight
+    -- Cache original positions of vanilla buttons so we can move them off-screen
+    -- (rather than setVisible(false)) once NI textures are ready. Off-screen keeps
+    -- getIsVisible()==true so forceClick() still works — important because vanilla
+    -- code such as ISWorldMap:close() does `self.forgetUI.no:forceClick()` on ESC.
+    if self.yesno then
+        self._yesOrigX, self._yesOrigY = self.yes:getX(), self.yes:getY()
+        self._noOrigX,  self._noOrigY  = self.no:getX(),  self.no:getY()
+    else
+        self._okOrigX,  self._okOrigY  = self.ok:getX(),  self.ok:getY()
+    end
 
-    -- Hide vanilla ok button — joypad still uses it via setISButtonForA
-    self.ok:setVisible(false)
+    local pad   = NR_Config.padding
+    local btnSz = NR_Config.buttonSize
+    local btnY  = self.height - btnSz - pad
 
-    -- NR_Header (draggable, close button → calls self:close())
-    self.header = NR_Header:new(0, 0, self.width, hh, self)
-    self.header:initialise()
-    self:addChild(self.header)
-    self.header:calculateLayout(self.width, hh)
+    if self.yesno then
+        local yesX = math.floor(self.width / 2) - btnSz - pad
+        self.iconYes = NI_SquareButton:new(yesX, btnY, btnSz,
+            getTexture("media/ui/NeatUI/Icon/Icon_True.png"), self,
+            function() ISModalRichText.onClick(self, { internal = "YES" }) end)
+        self.iconYes:initialise()
+        self.iconYes:setActive(true)
+        self.iconYes:setActiveColor(0.2, 0.75, 0.2)
+        self:addChild(self.iconYes)
 
-    -- Move chatText below header (vanilla placed it at y=2)
-    self.chatText:setY(hh + 2)
-    self.chatText:setHeight(self.height - hh - 2)
+        local noX = math.floor(self.width / 2) + pad
+        self.iconNo = NI_SquareButton:new(noX, btnY, btnSz,
+            getTexture("media/ui/NeatUI/Icon/Icon_False.png"), self,
+            function() ISModalRichText.onClick(self, { internal = "NO" }) end)
+        self.iconNo:initialise()
+        self.iconNo:setActive(true)
+        self.iconNo:setActiveColor(0.8, 0.2, 0.2)
+        self:addChild(self.iconNo)
+    else
+        local okX = math.floor((self.width - btnSz) / 2)
+        self.iconOk = NI_SquareButton:new(okX, btnY, btnSz,
+            getTexture("media/ui/NeatUI/Icon/Icon_True.png"), self,
+            function() ISModalRichText.onClick(self, { internal = "OK" }) end)
+        self.iconOk:initialise()
+        self.iconOk:setActive(true)
+        self.iconOk:setActiveColor(0.2, 0.75, 0.2)
+        self:addChild(self.iconOk)
+    end
+
+    -- chatText fills the panel from a small top inset, leaving room for buttons at the bottom
+    self.chatText:setY(pad)
+    self.chatText:setHeight(self.height - pad - self:bottomReserve())
     if self.chatText.vscroll then
         NR_ScrollingList.applyNeatStyle(self.chatText.vscroll)
     end
 end
 
 -- ----------------------------------------------------------------------------------------------------- --
--- updateButtons — no bottom buttons to reposition
+-- ensureIcons — retry getTexture if textures were not ready at initialise(),
+-- and toggle vanilla buttons ↔ NI buttons based on icon readiness.
+-- ----------------------------------------------------------------------------------------------------- --
+
+function NR_ModalRichText:ensureIcons()
+    if self.yesno then
+        if self.iconYes and not self.iconYes.iconTexture then
+            self.iconYes:setIcon(getTexture("media/ui/NeatUI/Icon/Icon_True.png"))
+        end
+        if self.iconNo and not self.iconNo.iconTexture then
+            self.iconNo:setIcon(getTexture("media/ui/NeatUI/Icon/Icon_False.png"))
+        end
+
+        local ready = (self.iconYes and self.iconYes.iconTexture
+                  and self.iconNo and self.iconNo.iconTexture) ~= nil
+        if ready ~= self._iconsReady then
+            self._iconsReady = ready
+            if ready then
+                -- Move vanilla off-screen so forceClick() keeps working (ESC path)
+                self.yes:setX(-9999); self.yes:setY(-9999)
+                self.no:setX(-9999);  self.no:setY(-9999)
+            else
+                -- Restore vanilla positions for fallback rendering
+                self.yes:setX(self._yesOrigX); self.yes:setY(self._yesOrigY)
+                self.no:setX(self._noOrigX);   self.no:setY(self._noOrigY)
+            end
+            self.iconYes:setVisible(ready)
+            self.iconNo:setVisible(ready)
+        end
+    else
+        if self.iconOk and not self.iconOk.iconTexture then
+            self.iconOk:setIcon(getTexture("media/ui/NeatUI/Icon/Icon_True.png"))
+        end
+
+        local ready = (self.iconOk and self.iconOk.iconTexture) ~= nil
+        if ready ~= self._iconsReady then
+            self._iconsReady = ready
+            if ready then
+                self.ok:setX(-9999); self.ok:setY(-9999)
+            else
+                self.ok:setX(self._okOrigX); self.ok:setY(self._okOrigY)
+            end
+            self.iconOk:setVisible(ready)
+        end
+    end
+end
+
+-- ----------------------------------------------------------------------------------------------------- --
+-- updateButtons — reposition NI buttons after a height change.
 -- ----------------------------------------------------------------------------------------------------- --
 
 function NR_ModalRichText:updateButtons()
-    -- nothing: vanilla ok is hidden, NR_Header handles the close button
+    local pad   = NR_Config.padding
+    local btnSz = NR_Config.buttonSize
+    local btnY  = self.height - btnSz - pad
+    if self.yesno then
+        if self.iconYes then self.iconYes:setY(btnY) end
+        if self.iconNo  then self.iconNo:setY(btnY)  end
+    else
+        if self.iconOk then self.iconOk:setY(btnY) end
+    end
 end
 
 -- ----------------------------------------------------------------------------------------------------- --
--- setHeightToContents — account for header instead of bottom button area
+-- setHeightToContents — account for top inset + bottom button reserve.
 -- ----------------------------------------------------------------------------------------------------- --
 
 function NR_ModalRichText:setHeightToContents()
-    local hh = NR_Config.headerHeight
-    local minHeight = self.chatText:getScrollHeight() + hh + 2
+    local minHeight = self.chatText:getScrollHeight() + NR_Config.padding + self:bottomReserve()
     self:setHeight(minHeight)
     self:ignoreHeightChange()
+    self:updateButtons()
 end
 
 -- ----------------------------------------------------------------------------------------------------- --
--- update — auto-resize window, keep chatText filling space below header
+-- update — auto-resize window, keep chatText filling the space.
 -- ----------------------------------------------------------------------------------------------------- --
 
 function NR_ModalRichText:update()
     ISPanelJoypad.update(self)
 
-    local hh        = NR_Config.headerHeight
+    local pad       = NR_Config.padding
+    local reserve   = self:bottomReserve()
     local maxHeight = getCore():getScreenHeight() - 40
-    local minHeight = math.min(self.chatText:getScrollHeight() + hh + 2, maxHeight)
+    local minHeight = math.min(self.chatText:getScrollHeight() + pad + reserve, maxHeight)
 
     if self:getHeight() < minHeight then
         local dh = minHeight - self:getHeight()
         self:setHeight(minHeight)
         self:ignoreHeightChange()
         self:setY(math.max(self:getY() - dh / 2, 20))
+        self:updateButtons()
     elseif self:getHeight() > maxHeight then
         self:setHeight(maxHeight)
         self:ignoreHeightChange()
         self:setY(20)
+        self:updateButtons()
     end
 
-    self.chatText:setHeight(self.height - hh - 2)
+    self.chatText:setHeight(self.height - pad - reserve)
     self.chatText:updateScrollbars()
 
     if self.alwaysOnTop then
@@ -155,11 +192,17 @@ function NR_ModalRichText:update()
 end
 
 -- ----------------------------------------------------------------------------------------------------- --
--- prerender — NeatUI background (below header)
+-- prerender — NeatUI rounded background, full panel.
 -- ----------------------------------------------------------------------------------------------------- --
 
 function NR_ModalRichText:prerender()
-    local hh = NR_Config.headerHeight
-    NR_DrawUtils.prerenderPanelBody(self, hh)
-    self:drawRect(0, hh - 1, self.width, 2, 1, 0, 0, 0)
+    self:ensureIcons()
+    local bg = NinePatchTexture.getSharedTexture("media/ui/NeatUI/DefaultPanel/MainPanelBG_RoundTop.png")
+    if bg then
+        local c = NR_Config.panelBg
+        bg:render(self:getAbsoluteX(), self:getAbsoluteY(), self.width, self.height, c, c, c, NR_Config.bgAlpha)
+    else
+        local c = NR_Config.panelBg
+        self:drawRect(0, 0, self.width, self.height, 0.95, c, c, c)
+    end
 end

@@ -277,10 +277,9 @@ function NR_Header:onClickInfo()
     local raw = pw:getInfoText()
 
     if not self._infoUI then
-        local sw       = getCore():getScreenWidth()
-        local sh       = getCore():getScreenHeight()
-        local fallback = (pw.getInfoTitle and pw:getInfoTitle()) or (pw.getWindowTitle and pw:getWindowTitle()) or ""
-        self._infoUI = NR_ModalRichText.newFromRichText(sw/2 - 300, sh/2 - 200, 600, 400, raw, fallback)
+        local sw = getCore():getScreenWidth()
+        local sh = getCore():getScreenHeight()
+        self._infoUI = NR_ModalRichText:new(sw/2 - 300, sh/2 - 200, 600, 400, raw, false)
         self._infoUI:initialise()
         self._infoUI.alwaysOnTop = true
         self._infoUI.chatText:paginate()
