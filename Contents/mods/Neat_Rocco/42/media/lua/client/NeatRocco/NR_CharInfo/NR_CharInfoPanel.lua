@@ -14,6 +14,11 @@ require "NeatUI_Framework/NeatTool/NeatTool_3Patch"
 
 NR_CharInfoPanel = ISCharacterInfoWindow:derive("NR_CharInfoPanel")
 
+-- Hooks called by shim.addView(view, name) for every tab added (vanilla or mod).
+-- Used by NR_CharInfo/compat/* files to apply mod-specific fixes without polluting
+-- this file. Defensive init: order of file load doesn't matter.
+NR_CharInfoPanel.addViewHooks = NR_CharInfoPanel.addViewHooks or {}
+
 local NI_SquareButton = require("NeatUI_Framework/UI/NI_SquareButton")
 
 -- Icons for known vanilla tabs; unknown tabs (mods) fall back to Icon_Mechanic.
@@ -79,10 +84,15 @@ end
 -- ----------------------------------------------------------------------------------------------------- --
 
 function NR_CharInfoPanel:_makeShim()
-    local outer = self
+    local outer    = self
+    local hh       = NR_Config.headerHeight
+    local tabBarH  = NR_Config.tabBarHeight
+    local contentW = outer.width
+    local contentH = outer.height - hh - tabBarH
 
-    -- Real ISPanel so that self:addChild(self.panel) works without error.
-    local shim = ISPanel:new(0, 0, 1, 1)
+    -- Real ISPanel sized to the content area so mods inspecting host.width/height
+    -- get sensible values at attach time, not 1×1.
+    local shim = ISPanel:new(0, hh + tabBarH, contentW, contentH)
     shim.background = false
     shim.viewList   = {}
 
@@ -91,13 +101,22 @@ function NR_CharInfoPanel:_makeShim()
     shim.setOnTabTornOff = function() end   -- torn-off tabs suppressed in NeatUI
     shim.removeView      = function() end
 
+    -- ISTabPanel API: mods inspect this to size themselves and avoid forcing setWidth.
+    shim.getWidthOfAllTabs = function(_)
+        local bsz = NR_Config.buttonSize
+        local pad = NR_Config.padding
+        return pad + outer.tabCount * (bsz + pad)
+    end
+
     shim.addView = function(s, name, view)
         outer.tabCount = outer.tabCount + 1
         local n = outer.tabCount
 
-        -- Position sub-panel below NeatUI header + tab bar
+        -- Position sub-panel below NeatUI header + tab bar. Keep the view's own
+        -- dimensions: vanilla views are created at tabTotalWidth, not window width,
+        -- and rely on absolute internal layout, so resizing would leave empty space.
         view:setX(0)
-        view:setY(NR_Config.headerHeight + NR_Config.tabBarHeight)
+        view:setY(hh + tabBarH)
         ISPanel.addChild(outer, view)
         view:setVisible(false)
 
@@ -111,6 +130,11 @@ function NR_CharInfoPanel:_makeShim()
         outer.subPanels[n]  = view
         outer.tabNames[n]   = name
         table.insert(s.viewList, { name = name, view = view })
+
+        -- Run mod compat hooks (see NR_CharInfo/compat/*.lua)
+        for _, hook in ipairs(NR_CharInfoPanel.addViewHooks) do
+            pcall(hook, view, name, outer)
+        end
     end
 
     shim.getActiveView = function(_)
@@ -375,21 +399,28 @@ function NR_CharInfoPanel:createChildren()
     if self.pinButton      then self.pinButton:setVisible(false)      end
     if self.collapseButton then self.collapseButton:setVisible(false) end  -- vanilla button, hidden; NeatUI uses header.collapseButton
 
-    -- 7. Set a sensible initial window size.
-    --    Vanilla createChildren ends with setWidth(charScreen.width) / setHeight(charScreen.height),
-    --    so at this point self.width/height are charScreen's initial dimensions (no header yet).
-    local initW = math.max(self.width, NR_Config.buttonSize * 20)
+    -- 7. Honour vanilla self:setWidth(charScreen.width). Only widen if our NeatUI
+    --    icon tab strip is wider than the vanilla layout (rare: icons are narrower
+    --    than vanilla text tabs, but possible if many mods add tabs).
+    local pad       = NR_Config.padding
+    local bsz       = NR_Config.buttonSize
+    local tabStripW = pad + self.tabCount * (bsz + pad)
+    local initW = math.max(self.width, tabStripW)
     local initH = hh + tabBarH + math.max(self.height, 400)
     self:onResize(initW, initH)
 
-    -- 8. Override setWidth at instance level so header/tabBar always follow any width change,
-    --    including those triggered by sub-panel setWidthAndParentWidth calls during render.
+    -- 8. Chain setWidth so header/tabBar follow any width change (sub-panel
+    --    setWidthAndParentWidth during render, mod hooks, etc.). Preserve any
+    --    existing setWidth (inherited or mod-installed, e.g. ArmorMakesSense's
+    --    width clamp) by calling prevSetWidth instead of bypassing to ISUIElement.
+    local prevSetWidth = self.setWidth
     self.setWidth = function(panel, w)
-        ISUIElement.setWidth(panel, w)
+        prevSetWidth(panel, w)
         if NR_CollapseUtils.isBodyVisible(panel) and panel.header and panel.tabBar then
-            panel.tabBar:setWidth(w)
-            panel.header:setWidth(w)
-            panel.header:calculateLayout(w, NR_Config.headerHeight)
+            local actualW = panel.width  -- read after prevSetWidth (may have clamped)
+            panel.tabBar:setWidth(actualW)
+            panel.header:setWidth(actualW)
+            panel.header:calculateLayout(actualW, NR_Config.headerHeight)
         end
     end
 
