@@ -56,6 +56,16 @@ local function NR_ModOptions()
         "IGUI_NR_ModOptions_BgAlpha_Tooltip"
     )
 
+    local collapseThresholdOpt = options:addComboBox(
+        "collapseThreshold",
+        "IGUI_NR_ModOptions_CollapseThreshold",
+        "IGUI_NR_ModOptions_CollapseThreshold_Tooltip"
+    )
+    collapseThresholdOpt:addItem("IGUI_NR_ModOptions_CollapseThreshold_10", false)
+    collapseThresholdOpt:addItem("IGUI_NR_ModOptions_CollapseThreshold_20", true)  -- vanilla default
+    collapseThresholdOpt:addItem("IGUI_NR_ModOptions_CollapseThreshold_60", false)
+    collapseThresholdOpt:addItem("IGUI_NR_ModOptions_CollapseThreshold_90", false)
+
     options:addTickBox(
         "convertToRT",
         "IGUI_NR_ModOptions_ConvertToRT",
@@ -98,10 +108,10 @@ local function NR_ModOptions()
 
     local opt = options:getOption("useNeatRoccoUI")
     if opt then
-        opt.onChange = function(self, selected)
+        opt.onChange = function(_, selected)
             _NR_fire_callbacks(_NR_to_bool(selected))
         end
-        opt.onChangeApply = function(self, selected)
+        opt.onChangeApply = function(_, selected)
             _NR_fire_callbacks(_NR_to_bool(selected))
         end
     end
@@ -111,8 +121,8 @@ local function NR_ModOptions()
         local function applyAlpha(value)
             NR_Config.bgAlpha = tonumber(value) or 1.0
         end
-        sliderOpt.onChange      = function(self, value) applyAlpha(value) end
-        sliderOpt.onChangeApply = function(self, value) applyAlpha(value) end
+        sliderOpt.onChange      = function(_, value) applyAlpha(value) end
+        sliderOpt.onChangeApply = function(_, value) applyAlpha(value) end
         applyAlpha(sliderOpt:getValue())
     end
 
@@ -162,6 +172,16 @@ local function NR_ModOptions()
         unionColorOpt.onChange      = function(_, v) apply(v) end
         unionColorOpt.onChangeApply = function(_, v) apply(v) end
         apply(unionColorOpt:getValue())
+    end
+
+    if collapseThresholdOpt then
+        local THRESHOLD_VALUES = { 10, 20, 60, 90 }
+        local function applyThreshold(idx)
+            NR_Config.collapseThreshold = THRESHOLD_VALUES[tonumber(idx) or 2] or 20
+        end
+        collapseThresholdOpt.onChange      = function(_, v) applyThreshold(v) end
+        collapseThresholdOpt.onChangeApply = function(_, v) applyThreshold(v) end
+        applyThreshold(collapseThresholdOpt:getValue())
     end
 
     _NR_fire_callbacks(NR_isEnabled())

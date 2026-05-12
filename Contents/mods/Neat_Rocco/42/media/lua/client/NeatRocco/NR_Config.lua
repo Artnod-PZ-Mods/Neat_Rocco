@@ -28,6 +28,9 @@ NR_Config = {
     panelBg          = 0.15,   -- panel body background gray (r = g = b)
     separatorColor   = { a = 0.6, r = 0.4, g = 0.4, b = 0.4 },
     selectionColor   = { a = 0.15, r = 0.3, g = 0.7, b = 0.35 },
+
+    -- Collapse / auto-hide threshold (frames at 60fps, vanilla ISCollapsableWindow uses 20)
+    collapseThreshold = 20,
 }
 
 -- Livestock

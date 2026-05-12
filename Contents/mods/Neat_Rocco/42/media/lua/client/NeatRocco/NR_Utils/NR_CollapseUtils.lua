@@ -3,27 +3,117 @@
 -- Works regardless of base class (NR_BasePanel, NR_BaseCW, or bare ISPanel).
 -- Uses setMaxDrawHeight / clearMaxDrawHeight (ISUIElement API, available on all panels).
 --
--- Panel contract:
+-- Behaviour matches vanilla ISCollapsableWindow exactly (same formula, same threshold,
+-- same event-driven mechanism):
+--
+--   onMouseMove (inside bbox):
+--       collapseTimer = 0
+--       if collapsed and mouse over no button is held and getMouseY < headerHeight
+--           expand body (uncollapse)
+--
+--   onMouseMoveOutside (mouse moved while outside bbox):
+--       if collapsed and body shown and really outside:
+--           collapseTimer += getMultiplier / getTrueMultiplier / 0.8
+--           if collapseTimer > 20: hide body (re-collapse)
+--
+-- Differences from vanilla ISCollapsableWindow:
+--   - Auto-hide only kicks in after the user clicked the collapse button (_isCollapsed=true).
+--     A panel that was never collapsed will never auto-hide. Equivalent to vanilla pin=true.
+--   - _isCollapsed tracks user intent; _bodyShown tracks current visual state.
+--     The collapse-button icon reflects user intent, not the transient peek state.
+--
+-- Panel contract (unchanged):
 --   Call NR_CollapseUtils.init(panel)      in new()
---   Call NR_CollapseUtils.update(panel)    in update()
---   Expose onClickCollapse / _onHeaderHover as instance methods (see below)
+--   Call NR_CollapseUtils.update(panel)    in update()   -- still called, kept as a no-op
+--   Expose onClickCollapse / _onHeaderHover as instance methods
 --   Guard body drawing with NR_CollapseUtils.isBodyVisible(panel)
 
 require "NeatRocco/NR_Config"
 
 NR_CollapseUtils = {}
 
-local ICON_EXPANDED  = "media/ui/NeatRocco/ICON/Icon_ArrowDown.png"
-local ICON_COLLAPSED = "media/ui/NeatRocco/ICON/Icon_Arrow_R.png"
-local PEEK_FRAMES    = 10
+local ICON_EXPANDED       = "media/ui/NeatRocco/ICON/Icon_ArrowDown.png"
+local ICON_COLLAPSED      = "media/ui/NeatRocco/ICON/Icon_Arrow_R.png"
+-- Threshold is read live from NR_Config.collapseThreshold (default 20 = vanilla).
+-- Adjustable via Mod Options. See NR_ModOptions.lua.
+
+-- ----------------------------------------------------------------------------------------------------- --
+-- Internal helpers
+-- ----------------------------------------------------------------------------------------------------- --
+
+local function _showBody(panel)
+    panel._bodyShown     = true
+    panel._collapseTimer = 0
+    panel:clearMaxDrawHeight()
+end
+
+local function _hideBody(panel)
+    panel._bodyShown     = false
+    panel._collapseTimer = 0
+    panel:setMaxDrawHeight(NR_Config.headerHeight)
+end
+
+local function _setButton(panel, icon, active)
+    local btn = panel.header and panel.header.collapseButton
+    if btn then
+        btn:setIcon(getTexture(icon))
+        btn:setActive(active)
+    end
+end
+
+local function _isAnyMouseButtonDown()
+    return isMouseButtonDown(0) or isMouseButtonDown(1) or isMouseButtonDown(2)
+end
+
+-- Vanilla `onMouseMove` + `uncollapse()` semantics, scoped to our intent flag.
+local function _handleMouseMove(panel)
+    if not panel._isCollapsed then return end
+    panel._collapseTimer = 0
+    if panel._bodyShown then return end
+    if _isAnyMouseButtonDown() then return end
+    if panel:getMouseY() < NR_Config.headerHeight then
+        _showBody(panel)
+    end
+end
+
+-- Vanilla `onMouseMoveOutside` auto-collapse semantics.
+local function _handleMouseMoveOutside(panel)
+    if not panel._isCollapsed then return end
+    if not panel._bodyShown   then return end
+    local mx, my = panel:getMouseX(), panel:getMouseY()
+    if mx < 0 or my < 0 or mx > panel:getWidth() or my > panel:getHeight() then
+        local gt = getGameTime()
+        local tm = gt:getTrueMultiplier()
+        if tm > 0 then
+            panel._collapseTimer = panel._collapseTimer + (gt:getMultiplier() / tm) / 0.8
+        end
+        if panel._collapseTimer > (NR_Config.collapseThreshold or 20) then
+            _hideBody(panel)
+        end
+    end
+end
 
 -- ----------------------------------------------------------------------------------------------------- --
 -- Init — call in new() after ISPanelJoypad.new() / ISCollapsableWindow:new()
+-- Installs instance-level hooks on onMouseMove / onMouseMoveOutside.
 -- ----------------------------------------------------------------------------------------------------- --
 
 function NR_CollapseUtils.init(panel)
-    panel._isCollapsed = false
-    panel._peekCounter = 0
+    panel._isCollapsed   = false  -- user intent (toggled by collapse button)
+    panel._bodyShown     = true   -- current visual state
+    panel._collapseTimer = 0      -- vanilla-style weighted frame counter
+
+    local origMove = panel.onMouseMove
+    panel.onMouseMove = function(self, dx, dy)
+        if origMove then origMove(self, dx, dy) end
+        _handleMouseMove(self)
+    end
+
+    local origMoveOut = panel.onMouseMoveOutside
+    panel.onMouseMoveOutside = function(self, dx, dy)
+        if origMoveOut then origMoveOut(self, dx, dy) end
+        _handleMouseMoveOutside(self)
+    end
 end
 
 -- ----------------------------------------------------------------------------------------------------- --
@@ -31,7 +121,7 @@ end
 -- ----------------------------------------------------------------------------------------------------- --
 
 function NR_CollapseUtils.isBodyVisible(panel)
-    return not panel._isCollapsed or panel._peekCounter > 0
+    return panel._bodyShown
 end
 
 -- ----------------------------------------------------------------------------------------------------- --
@@ -39,43 +129,36 @@ end
 -- ----------------------------------------------------------------------------------------------------- --
 
 function NR_CollapseUtils.onClickCollapse(panel)
-    local hh  = NR_Config.headerHeight
-    local btn = panel.header and panel.header.collapseButton
     if panel._isCollapsed then
         panel._isCollapsed = false
-        panel._peekCounter = 0
-        panel:clearMaxDrawHeight()
-        if btn then btn:setIcon(getTexture(ICON_EXPANDED)); btn:setActive(true) end
+        _showBody(panel)
+        _setButton(panel, ICON_EXPANDED, true)
     else
         panel._isCollapsed = true
-        panel._peekCounter = 0
-        panel:setMaxDrawHeight(hh)
-        if btn then btn:setIcon(getTexture(ICON_COLLAPSED)); btn:setActive(false) end
+        _hideBody(panel)
+        _setButton(panel, ICON_COLLAPSED, false)
     end
 end
 
 -- ----------------------------------------------------------------------------------------------------- --
--- Hover — wire to panel:_onHeaderHover() (called by NR_Header on mouse move)
+-- Header hover — wire to panel:_onHeaderHover() (called by NR_Header on mouse move)
+-- Equivalent path to _handleMouseMove (since NR_Header sits inside the panel header zone).
+-- Kept as a public entry point for panels that route header mouse events here.
 -- ----------------------------------------------------------------------------------------------------- --
 
 function NR_CollapseUtils.onHeaderHover(panel)
-    if panel._isCollapsed then
-        if panel._peekCounter == 0 then
-            panel:clearMaxDrawHeight()
-        end
-        panel._peekCounter = PEEK_FRAMES
-    end
+    if not panel._isCollapsed then return end
+    panel._collapseTimer = 0
+    if panel._bodyShown then return end
+    if _isAnyMouseButtonDown() then return end
+    _showBody(panel)
 end
 
 -- ----------------------------------------------------------------------------------------------------- --
--- Update — call in panel:update() each frame
+-- Update — no-op. Kept for contract compatibility with existing panels.
+-- The mechanism is now fully event-driven via the onMouseMove / onMouseMoveOutside hooks
+-- installed in init(), matching vanilla ISCollapsableWindow exactly.
 -- ----------------------------------------------------------------------------------------------------- --
 
-function NR_CollapseUtils.update(panel)
-    if panel._isCollapsed and panel._peekCounter > 0 then
-        panel._peekCounter = panel._peekCounter - 1
-        if panel._peekCounter == 0 then
-            panel:setMaxDrawHeight(NR_Config.headerHeight)
-        end
-    end
+function NR_CollapseUtils.update()
 end
