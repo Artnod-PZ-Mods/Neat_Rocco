@@ -23,11 +23,10 @@ function NR_ConfirmDialog:initialise()
     local btnSz = NR_Config.buttonSize
     local btnY  = self.height - btnSz - pad
 
+    -- Visibility of vanilla vs NI buttons is driven by ensureIcons() at each
+    -- prerender, so the dialog always shows usable buttons (vanilla as
+    -- fallback while NeatUI icon textures load).
     if self.yesno then
-        -- Hide vanilla text buttons — joypad still uses them via setISButtonForA/B
-        self.yes:setVisible(false)
-        self.no:setVisible(false)
-
         -- YES icon button — mouse only (green)
         local yesX = math.floor(self.width / 2) - btnSz - pad
         self.iconYes = NI_SquareButton:new(yesX, btnY, btnSz,
@@ -48,9 +47,6 @@ function NR_ConfirmDialog:initialise()
         self.iconNo:setActiveColor(0.8, 0.2, 0.2)
         self:addChild(self.iconNo)
     else
-        -- Hide vanilla ok button
-        self.ok:setVisible(false)
-
         -- OK icon button — mouse only (green, centred)
         local okX = math.floor((self.width - btnSz) / 2)
         self.iconOk = NI_SquareButton:new(okX, btnY, btnSz,
@@ -64,10 +60,49 @@ function NR_ConfirmDialog:initialise()
 end
 
 -- ----------------------------------------------------------------------------------------------------- --
+-- ensureIcons — retry getTexture if textures were not ready at initialise(),
+-- and toggle vanilla buttons ↔ NI buttons based on icon readiness so the
+-- dialog never shows itself without usable buttons.
+-- ----------------------------------------------------------------------------------------------------- --
+
+function NR_ConfirmDialog:ensureIcons()
+    if self.yesno then
+        if self.iconYes and not self.iconYes.iconTexture then
+            self.iconYes:setIcon(getTexture("media/ui/NeatUI/Icon/Icon_True.png"))
+        end
+        if self.iconNo and not self.iconNo.iconTexture then
+            self.iconNo:setIcon(getTexture("media/ui/NeatUI/Icon/Icon_False.png"))
+        end
+
+        local ready = (self.iconYes and self.iconYes.iconTexture
+                  and self.iconNo and self.iconNo.iconTexture) ~= nil
+        if ready ~= self._iconsReady then
+            self._iconsReady = ready
+            self.yes:setVisible(not ready)
+            self.no:setVisible(not ready)
+            self.iconYes:setVisible(ready)
+            self.iconNo:setVisible(ready)
+        end
+    else
+        if self.iconOk and not self.iconOk.iconTexture then
+            self.iconOk:setIcon(getTexture("media/ui/NeatUI/Icon/Icon_True.png"))
+        end
+
+        local ready = (self.iconOk and self.iconOk.iconTexture) ~= nil
+        if ready ~= self._iconsReady then
+            self._iconsReady = ready
+            self.ok:setVisible(not ready)
+            self.iconOk:setVisible(ready)
+        end
+    end
+end
+
+-- ----------------------------------------------------------------------------------------------------- --
 -- prerender — NeatUI background + prompt text
 -- ----------------------------------------------------------------------------------------------------- --
 
 function NR_ConfirmDialog:prerender()
+    self:ensureIcons()
     local bg = NinePatchTexture.getSharedTexture("media/ui/NeatUI/DefaultPanel/MainPanelBG_RoundTop.png")
     if bg then
         local c = NR_Config.panelBg
