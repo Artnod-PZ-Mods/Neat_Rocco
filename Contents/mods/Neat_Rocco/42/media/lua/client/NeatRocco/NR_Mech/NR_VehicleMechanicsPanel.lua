@@ -38,20 +38,30 @@ local LIST_Y = NR_Config.headerHeight + INFO_GAP_TOP + INFO_PAD + FONT_HGT_MEDIU
 -- Width constants
 local MECH_CAR_W    = 300   -- fixed by car overlay art assets
 local MECH_LIST_GAP = NR_Config.padding
+local MIN_PANEL_W   = 800   -- matches vanilla minimum (ISVehicleMechanics:updateLayout)
 
--- Returns the required list column width for a given vehicle (mirrors vanilla initParts logic).
+-- Returns the required list column width for a given vehicle.
+-- Mirrors vanilla initParts logic but accounts for the extended text drawn by
+-- doDrawItem on Battery / GasTank ("Name: NN% Remaining (CC%)") which vanilla
+-- does NOT include in its own listWidth calculation, causing truncation.
 -- vehicle can be nil on first creation (set later by the patch before initParts runs).
 local function computeListWidth(vehicle)
     if not vehicle then return math.floor(FONT_HGT_SMALL * 14) end
+    local tm = getTextManager()
     local scrollW  = 16
+    local condW    = tm:MeasureStringX(UIFont.Small, " (100%)")
+    -- Worst-case "Remaining" prefix: ": 100% <translated>"
+    local remW     = tm:MeasureStringX(UIFont.Small, ": 100% " .. getText("IGUI_invpanel_Remaining"))
     local maxWidth = 0
     for i = 1, vehicle:getPartCount() do
         local part = vehicle:getPartByIndex(i - 1)
         if part:getCategory() ~= "nodisplay" then
-            local name = getText("IGUI_VehiclePart" .. part:getId())
-            local w = 20 + getTextManager():MeasureStringX(UIFont.Small, name)
-                       + 2 + getTextManager():MeasureStringX(UIFont.Small, "(100%)")
-                       + scrollW + 2
+            local id   = part:getId()
+            local name = getText("IGUI_VehiclePart" .. id)
+            local w    = 20 + tm:MeasureStringX(UIFont.Small, name) + condW + scrollW + 2
+            if id == "Battery" or id == "GasTank" then
+                w = w + remW
+            end
             if w > maxWidth then maxWidth = w end
         end
     end
@@ -65,7 +75,7 @@ end
 
 function NR_VehicleMechanicsPanel:new(x, y, character, vehicle)
     local listWidth = computeListWidth(vehicle)
-    local width  = MECH_CAR_W + listWidth * 2 + MECH_LIST_GAP + NR_Config.padding
+    local width  = math.max(MIN_PANEL_W, MECH_CAR_W + listWidth * 2 + MECH_LIST_GAP + NR_Config.padding)
     local height = CAR_Y_OFFSET + 600 - RESIZE_H  -- full car, lists fill to window bottom
     if x == 0 and y == 0 then
         x = math.floor(getCore():getScreenWidth()  / 2 - width  / 2)
@@ -199,17 +209,22 @@ end
 
 function NR_VehicleMechanicsPanel:updateLayout()
     -- initParts (vanilla) sets self.listWidth from actual part names then calls updateLayout.
+    -- Vanilla's formula doesn't include the extended "Remaining" text drawn for
+    -- Battery/GasTank — extend it here so those rows don't get truncated.
+    if self.vehicle then
+        self.listWidth = math.max(self.listWidth or 0, computeListWidth(self.vehicle))
+    end
     -- We detect the change, update widths, and recalculate layout to fit content exactly.
     if self.listbox:getWidth() == self.listWidth then return end
     NR_ScrollingList.setWidth(self.listbox, self.listWidth)
     NR_ScrollingList.setWidth(self.bodyworklist, self.listWidth)
-    local newW = MECH_CAR_W + self.listWidth * 2 + MECH_LIST_GAP + NR_Config.padding
+    local newW = math.max(MIN_PANEL_W, MECH_CAR_W + self.listWidth * 2 + MECH_LIST_GAP + NR_Config.padding)
     self.minimumWidth = newW
     self:calculateLayout(newW, self.height)
 end
 
 function NR_VehicleMechanicsPanel:calculateLayout(_, h)
-    local width  = MECH_CAR_W + self.listWidth * 2 + MECH_LIST_GAP + NR_Config.padding
+    local width  = math.max(MIN_PANEL_W, MECH_CAR_W + self.listWidth * 2 + MECH_LIST_GAP + NR_Config.padding)
     local height = math.max(h or self.height, self.minimumHeight or 0)
     local listH = math.max(height - LIST_Y - RESIZE_H, FONT_HGT_SMALL)
     NR_ScrollingList.setHeight(self.listbox, listH)
