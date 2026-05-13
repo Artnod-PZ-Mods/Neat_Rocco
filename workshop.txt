@@ -98,6 +98,8 @@ description=[*][url=https://steamcommunity.com/sharedfiles/filedetails/?id=33875
 description=[*][url=https://steamcommunity.com/sharedfiles/filedetails/?id=3635856965]Better Auto Mechanics[/url]
 description=[*][url=https://steamcommunity.com/sharedfiles/filedetails/?id=3171167894]That DAMN Library[/url] (Ki5 vehicles)
 description=[*][url=https://steamcommunity.com/sharedfiles/filedetails/?id=3488600400]TwisTonFire - Better Character Info[/url]
+description=[*][url=https://steamcommunity.com/sharedfiles/filedetails/?id=2757712197]Vehicle Repair Overhaul[/url]
+description=[*][url=https://steamcommunity.com/sharedfiles/filedetails/?id=3304580957]Standardized Vehicle Upgrades 3 - Core[/url]
 description=[/list]
 description=
 description=[hr]
