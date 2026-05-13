@@ -199,13 +199,15 @@ function NR_CharInfoPanel:createChildren()
         NR_ScrollingList.applyNeatStyle(self.characterView.vscroll)
     end
 
-    -- 5c. Replace vanilla collapse/expand ISButton with NI_SquareButton in skills panel
+    -- 5c. Replace vanilla collapse/expand ISButton with NI_SquareButton in skills panel.
+    --     Preserve the size set by the sub-panel (vanilla or mod-customized, uses a 
+    --     smaller button size)
     if self.characterView and self.characterView.buttonList then
-        local bsz        = getTextManager():getFontHeight(UIFont.Small) + 6
         local texDown    = getTexture("media/ui/NeatRocco/ICON/Icon_ArrowDown.png")
         local texRight   = getTexture("media/ui/NeatRocco/ICON/Icon_Arrow_R.png")
         local view       = self.characterView
         for i, oldBtn in ipairs(view.buttonList) do
+            local bsz    = oldBtn:getHeight()
             view:removeChild(oldBtn)
             local idx    = i
             local newBtn = NI_SquareButton:new(oldBtn.x, oldBtn.y, bsz, texDown, view, function()

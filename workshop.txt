@@ -7,6 +7,10 @@ description=
 description=Redesigns in-game vanilla menus with a clean, modern interface inspired by the NeatUI style. Icon buttons, consistent colors, and a layout that stays out of your way.
 description=
 description=[hr]
+description=[h2]Requires:[/h2]
+description=[url=https://steamcommunity.com/sharedfiles/filedetails/?id=3508537032]NeatUI Framework[/url] must be enabled and loaded before this mod.
+description=
+description=[hr]
 description=[h2]Why Rocco's UI?[/h2]
 description=[i]"Rocco's UI" is a tribute to Rocco, the creator of these mods and whose work made this mod possible:[/i]
 description=[list]
@@ -14,20 +18,6 @@ description=[*][url=https://steamcommunity.com/sharedfiles/filedetails/?id=35085
 description=[*][url=https://steamcommunity.com/sharedfiles/filedetails/?id=3502080466]Neat Crafting[/url]
 description=[*][url=https://steamcommunity.com/sharedfiles/filedetails/?id=3536052310]Neat Building[/url]
 description=[*] and more
-description=[/list]
-description=
-description=[hr]
-description=[h2]Requires:[/h2]
-description=[url=https://steamcommunity.com/sharedfiles/filedetails/?id=3508537032]NeatUI Framework[/url] must be enabled and loaded before this mod.
-description=
-description=[h2]Incompatible:[/h2]
-description=If you have any of these mods installed, disable them. They are all included in Neat Rocco's UI:
-description=[list]
-description=[*][url=https://steamcommunity.com/sharedfiles/filedetails/?id=3691034292]Neat Livestock[/url]
-description=[*][url=https://steamcommunity.com/sharedfiles/filedetails/?id=3692364630]Neat Butcher Hook[/url]
-description=[*][url=https://steamcommunity.com/sharedfiles/filedetails/?id=3693240972]Neat Hutch[/url]
-description=[*][url=https://steamcommunity.com/sharedfiles/filedetails/?id=3702056978]Neat Generator[/url]
-description=[*][url=https://steamcommunity.com/sharedfiles/filedetails/?id=3702689769]Neat Bake[/url]
 description=[/list]
 description=
 description=[hr]
@@ -103,6 +93,11 @@ description=[list]
 description=[*][url=https://steamcommunity.com/sharedfiles/filedetails/?id=3721829036]STA Better Hutches[/url]
 description=[*][url=https://steamcommunity.com/sharedfiles/filedetails/?id=3388721641]Auto-Cook[/url]
 description=[*][url=https://steamcommunity.com/sharedfiles/filedetails/?id=3470852353]Improved Farming Info Window[/url]
+description=[*][url=https://steamcommunity.com/sharedfiles/filedetails/?id=3677430162]Armor Makes Sense[/url]
+description=[*][url=https://steamcommunity.com/sharedfiles/filedetails/?id=3387539308]AutoMechanics[/url]
+description=[*][url=https://steamcommunity.com/sharedfiles/filedetails/?id=3635856965]Better Auto Mechanics[/url]
+description=[*][url=https://steamcommunity.com/sharedfiles/filedetails/?id=3171167894]That DAMN Library[/url] (Ki5 vehicles)
+description=[*][url=https://steamcommunity.com/sharedfiles/filedetails/?id=3488600400]TwisTonFire - Better Character Info[/url]
 description=[/list]
 description=
 description=[hr]
