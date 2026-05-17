@@ -56,7 +56,14 @@ end
 -- Constructor
 -- ----------------------------------------------------------------------------------------------------- --
 
-function NR_GarmentPanel:new(x, y, character, clothing)
+-- :new is intentionally NOT overridden. NR_MakePatch redirects ISGarmentUI:new ->
+-- NR_GarmentPanel via vanilla ISGarmentUI.new, which creates the instance with
+-- vanilla width=460. Our :initialise then runs _nrSetupLayout to compute the actual
+-- NeatUI width from texture/text content and store all NR-specific props.
+
+local function _nrSetupLayout(self)
+    local character = self.chr
+    local clothing  = self.clothing
     local playerNum = character:getPlayerNum()
     local pad = NR_Config.padding
     local tm  = getTextManager()
@@ -115,39 +122,32 @@ function NR_GarmentPanel:new(x, y, character, clothing)
 
     local width = math.max(bulletX + bulletW + pad, minBarsW, 300)
 
-    local o = ISPanelJoypad.new(self, x, y, width, NR_Config.headerHeight + 100)
-    o.barW1 = barW1 ; o.bar1X = bar1X
-    o.barW2 = barW2 ; o.bar2X = bar2X
-    o.barW3 = barW3 ; o.bar3X = bar3X
-    setmetatable(o, self)
-    self.__index = self
+    -- Resize panel to fit NeatUI content and recenter on player screen.
+    self:setWidth(width)
+    self:setHeight(NR_Config.headerHeight + 100)
+    self:setX(getPlayerScreenLeft(playerNum) + math.floor((getPlayerScreenWidth(playerNum) - width) / 2))
 
-    o.character = character
-    o.chr       = character  -- alias required by ISGarmentUI / mod patches (AutoTailoring etc.)
-    o.playerNum = playerNum
-    o.clothing  = clothing
+    -- Store layout / data props
+    self.character = character    -- alias for code using `character`
+    self.playerNum = playerNum
+    self.barW1 = barW1; self.bar1X = bar1X
+    self.barW2 = barW2; self.bar2X = bar2X
+    self.barW3 = barW3; self.bar3X = bar3X
+    self.textures = textures
+    self.parts    = parts
+    self.listX    = listX
+    self.biteX    = biteX
+    self.scratchX = scratchX
+    self.bulletX  = bulletX
+    self.imgMinX  = (minX < 1000) and minX or 0
+    self.imgMinY  = (minY < 1000) and minY or 0
+    self.imgW     = imgW
+    self.imgH     = imgH
+    self.rowYPositions    = {}
+    self.bodyPartAction   = {}
+    self.actionToBodyPart = {}
 
-    o.textures  = textures
-    o.parts     = parts
-    o.listX     = listX
-    o.biteX     = biteX
-    o.scratchX  = scratchX
-    o.bulletX   = bulletX
-    o.imgMinX   = (minX < 1000) and minX or 0
-    o.imgMinY   = (minY < 1000) and minY or 0
-    o.imgW      = imgW
-    o.imgH      = imgH
-
-    NR_BasePanel.initBase(o)
-
-    o.rowYPositions    = {}
-    o.bodyPartAction   = {}
-    o.actionToBodyPart = {}
-
-    -- Register so ISRepairClothing / ISRemovePatch can notify us
-    ISGarmentUI.windows[playerNum] = o
-
-    return o
+    NR_BasePanel.initBase(self)
 end
 
 -- ----------------------------------------------------------------------------------------------------- --
@@ -180,8 +180,11 @@ end
 -- Lifecycle
 -- ----------------------------------------------------------------------------------------------------- --
 
--- Bypass ISGarmentUI:initialise (which creates a vanilla listbox we don't use)
+-- Bypass ISGarmentUI:initialise (which creates a vanilla listbox we don't use).
+-- _nrSetupLayout runs first so self.width / self.parts / self.listX etc. are set
+-- before :createChildren is invoked by ISPanelJoypad.initialise.
 function NR_GarmentPanel:initialise()
+    _nrSetupLayout(self)
     ISPanelJoypad.initialise(self)
 end
 

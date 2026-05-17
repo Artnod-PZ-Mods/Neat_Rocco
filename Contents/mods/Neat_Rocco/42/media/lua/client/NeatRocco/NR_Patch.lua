@@ -19,6 +19,7 @@ require "NeatRocco/NR_Generic/NR_BombTimerDialog"
 require "NeatRocco/NR_Generic/NR_AlarmClockDialog"
 require "NeatRocco/NR_Generic/NR_DigitalCode"
 require "NeatRocco/NR_Fitness/NR_FitnessPanel"
+require "NeatRocco/NR_Garment/NR_GarmentPanel"
 
 -- ##########################################
 -- ### Generic class replacement helper   ###
@@ -53,6 +54,7 @@ NR_MakePatch(ISBombTimerDialog,   NR_BombTimerDialog,  "Dialogs")
 NR_MakePatch(ISAlarmClockDialog,  NR_AlarmClockDialog, "Dialogs")
 NR_MakePatch(ISDigitalCode,       NR_DigitalCode,      "Dialogs")
 NR_MakePatch(ISFitnessUI,         NR_FitnessPanel,     "Fitness")
+NR_MakePatch(ISGarmentUI,         NR_GarmentPanel,     "Garment")
 
 -- ##############################
 -- ### Per-feature patches    ###
@@ -65,7 +67,6 @@ require "NeatRocco/NR_Patches/NR_Patch_Generator"
 require "NeatRocco/NR_Patches/NR_Patch_BBQ"
 require "NeatRocco/NR_Patches/NR_Patch_Bake"
 require "NeatRocco/NR_Patches/NR_Patch_Farming"
-require "NeatRocco/NR_Patches/NR_Patch_Garment"
 require "NeatRocco/NR_Patches/NR_Patch_Search"
 require "NeatRocco/NR_Patches/NR_Patch_Mech"
 require "NeatRocco/NR_Patches/NR_Patch_AnimalTracks"
