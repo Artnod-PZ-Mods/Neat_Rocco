@@ -1,6 +1,8 @@
 -- NR_CharInfoPanel.lua
 -- NeatUI replacement for ISCharacterInfoWindow (character info / C key).
--- Frame: NR_Header + custom tab bar. Sub-panels: vanilla, reused unchanged.
+-- Frame: NR_Header + custom tab bar. Sub-panels: vanilla, skinned in place;
+-- healthView uses NR_HealthPanel (derived from ISHealthPanel) so any mod adding
+-- an ISButton to the health panel is auto-wrapped as a NI_SquareButton.
 -- Mod compatibility: third-party mods that add tabs via self.panel:addView()
 -- (e.g. AutoCook) work automatically via the ISTabPanel shim.
 
@@ -10,6 +12,7 @@ require "NeatRocco/NR_Utils/NR_CollapseUtils"
 require "NeatRocco/NR_Utils/NR_TabBar"
 require "NeatRocco/NR_Utils/NR_ScrollingList"
 require "NeatRocco/NR_Config"
+require "NeatRocco/NR_CharInfo/NR_HealthPanel"
 require "NeatUI_Framework/NeatTool/NeatTool_3Patch"
 
 NR_CharInfoPanel = ISCharacterInfoWindow:derive("NR_CharInfoPanel")
@@ -188,11 +191,18 @@ function NR_CharInfoPanel:createChildren()
     local origNew = ISTabPanel.new
     ISTabPanel.new = function() ISTabPanel.new = origNew; return shimRef end
 
+    -- 4b. Intercept ISHealthPanel.new so vanilla createChildren builds an NR_HealthPanel
+    --     as healthView. Same self-restoring pattern as ISTabPanel.new above. NR_HealthPanel
+    --     calls ISHealthPanel.createChildren(self) so all mod patches still run.
+    local origHealthNew = ISHealthPanel.new
+    ISHealthPanel.new = function(_, ...) ISHealthPanel.new = origHealthNew; return NR_HealthPanel:new(...) end
+
     -- 5. Run vanilla createChildren + all mod patches (AutoCook etc.)
     --    Each self.panel:addView() call goes to shim.addView → wires a tab.
     ISCharacterInfoWindow.createChildren(self)
 
-    ISTabPanel.new = origNew  -- safety restore in case vanilla skipped ISTabPanel:new
+    ISTabPanel.new = origNew                -- safety restore in case vanilla skipped ISTabPanel:new
+    ISHealthPanel.new = origHealthNew       -- safety restore in case vanilla skipped ISHealthPanel:new
 
     -- 5b. Apply NeatUI scrollbar to the skills sub-panel
     if self.characterView and self.characterView.vscroll then
@@ -223,17 +233,7 @@ function NR_CharInfoPanel:createChildren()
         end
     end
 
-    -- 5d. ISHealthPanel draws a bottom instruction text directly in render() but does not
-    --     include it in its setWidthAndParentWidth calculation. Patch tabtotalwidth so
-    --     ISHealthPanel's own width calculation accounts for it.
-    if self.healthView then
-        local healthTextW = getTextManager():MeasureStringX(UIFont.Small, getText("IGUI_health_RightClickTreatement")) + 20
-        if self.healthView.tabtotalwidth < healthTextW then
-            self.healthView.tabtotalwidth = healthTextW
-        end
-    end
-
-    -- 5e. Replace hairButton, beardButton, literatureButton with NI_SquareButtons
+    -- 5d. Replace hairButton, beardButton, literatureButton with NI_SquareButtons
     if self.charScreen then
         local view = self.charScreen
         local bsz  = NR_Config.buttonSize
@@ -300,39 +300,7 @@ function NR_CharInfoPanel:createChildren()
         end
     end
 
-    -- 5f. Replace fitness button in healthView with NI_SquareButton
-    if self.healthView and self.healthView.fitness then
-        local view      = self.healthView
-        local bsz       = NR_Config.buttonSize
-        local oldBtn    = view.fitness
-        local isTutorial = getCore():getGameMode() == "Tutorial"
-        local newBtn = NI_SquareButton:new(oldBtn.x, oldBtn.y, bsz,
-                           getTexture("media/ui/NeatRocco/CategoryIcon/Icon_Fitness.png"),
-                           view, function() ISNewHealthPanel.onClick(view, { internal = "FITNESS" }) end)
-        newBtn:initialise()
-        newBtn:setActive(true)
-        newBtn:setActiveColor(0.95, 0.5, 0.1)
-        newBtn.tabName = getText("ContextMenu_Fitness")
-        view:addChild(newBtn)
-        oldBtn:setVisible(false)
-        if isTutorial then newBtn:setVisible(false) end
-        self._neatFitnessBtn = newBtn
-
-        -- No prerender hook: vanilla never calls fitness:setVisible(true) in render,
-        -- so the old button stays hidden once we set it false in makeNeatBtn.
-        -- We only need render to sync position and mirror the otherPlayer condition.
-        local origRender = view.render
-        view.render = function(v)
-            origRender(v)
-            if view.fitness then
-                newBtn:setX(view.fitness.x)
-                newBtn:setY(view.fitness.y)
-                newBtn:setVisible(not view.otherPlayer and not isTutorial)
-            end
-        end
-    end
-
-    -- 5g. Apply NeatUI three-patch style to clothingView buttons
+    -- 5e. Apply NeatUI three-patch style to clothingView buttons
     if self.clothingView then
         local view   = self.clothingView
         local btnL   = getTexture("media/ui/NeatUI/Button/Button_FULL_L.png")
@@ -558,9 +526,7 @@ function NR_CharInfoPanel:render()
     end
     if not drawBtnTip(self._neatHairBtn) then
         if not drawBtnTip(self._neatBeardBtn) then
-            if not drawBtnTip(self._neatLitBtn) then
-                drawBtnTip(self._neatFitnessBtn)
-            end
+            drawBtnTip(self._neatLitBtn)
         end
     end
 end
