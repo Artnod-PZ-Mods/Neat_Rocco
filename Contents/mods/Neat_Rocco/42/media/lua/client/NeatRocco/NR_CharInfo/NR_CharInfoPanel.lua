@@ -181,6 +181,11 @@ function NR_CharInfoPanel:createChildren()
     -- 2. Tab bar strip (no vanilla background)
     self.tabBar = NR_TabBar.create(self, hh)
 
+    -- Expose tabHeight so third-party mods that add tabs (PhunMart 2 wallet,
+    -- ArmorMakesSense burden panel, etc.) and read self.parent.tabHeight from
+    -- their sub-panel prerender get a coherent value.
+    self.tabHeight = tabBarH
+
     -- 3. Shim must exist BEFORE the vanilla chain runs
     self.panel = self:_makeShim()
 

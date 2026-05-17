@@ -29,10 +29,8 @@ require "NeatRocco/NR_Config"
 table.insert(NR_CharInfoPanel.addViewHooks, function(view, _, outer)
     if type(view.syncSizeToScreen) ~= "function" then return end
 
-    -- AMSBurdenPanel:syncSizeToScreen reads tabPanel.tabHeight via view:getParent().
-    -- Our views are addChild'd to outer (not shim), so set tabHeight on outer.
-    -- Default ISTabPanel.tabHeight is 24; ours matches the NeatUI icon tab bar.
-    outer.tabHeight = NR_Config.tabBarHeight
+    -- outer.tabHeight is set by default in NR_CharInfoPanel:createChildren (consumed
+    -- by AMSBurdenPanel:syncSizeToScreen via view:getParent().tabHeight).
 
     -- Force the AMS panel width to follow the window width (ignore canonicalW).
     local origSetWidth = view.setWidth
