@@ -267,9 +267,13 @@ function NR_FitnessPanel:render()
     local currentAction = actionQueue.queue[1]
     self:updateButtons(currentAction)
 
-    -- Sync NeatUI button states
-    self.neatBtnOK:setActive(self.ok.enable ~= false)
-    self.neatBtnCancel:setActive(self.cancel.enable ~= false)
+    -- Sync NeatUI button states (visual + click handling)
+    local okEnabled     = self.ok.enable ~= false
+    local cancelEnabled = self.cancel.enable ~= false
+    self.neatBtnOK:setActive(okEnabled)
+    self.neatBtnOK.enable = okEnabled
+    self.neatBtnCancel:setActive(cancelEnabled)
+    self.neatBtnCancel.enable = cancelEnabled
 
     local L   = self._layout
     if not L then return end

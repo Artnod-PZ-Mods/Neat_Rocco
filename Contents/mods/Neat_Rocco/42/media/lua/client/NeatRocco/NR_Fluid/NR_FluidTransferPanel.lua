@@ -412,8 +412,12 @@ function NR_FluidTransferPanel:validatePanel(forceUpdate)
         end
     end
 
-    self.btnPour:setActive(not self.disableTransfer)
-    self.btnSwap:setActive(not self.disableSwap)
+    local canTransfer = not self.disableTransfer
+    local canSwap     = not self.disableSwap
+    self.btnPour:setActive(canTransfer)
+    self.btnPour.enable = canTransfer
+    self.btnSwap:setActive(canSwap)
+    self.btnSwap.enable = canSwap
 end
 
 -- ----------------------------------------------------------------------------------------------------- --
