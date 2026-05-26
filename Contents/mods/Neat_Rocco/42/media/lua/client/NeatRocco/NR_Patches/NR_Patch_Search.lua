@@ -70,8 +70,8 @@ local function NR_applySearchToggle(enabled)
         Events.OnCreatePlayer.Add(ISSearchWindow._NR_old_createUI)
         Events.OnPlayerDeath.Remove(NR_destroySearchUI)
         Events.OnPlayerDeath.Add(ISSearchWindow._NR_old_destroyUI)
-        for _, panel in pairs(NR_SearchPanel.players) do
-            if panel then panel:close() end
+        for character, panel in pairs(NR_SearchPanel.players) do
+            if panel then NR_destroySearchUI(character) end
         end
     end
 end

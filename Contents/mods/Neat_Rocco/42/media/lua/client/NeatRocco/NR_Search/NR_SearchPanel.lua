@@ -12,6 +12,7 @@ require "Foraging/ISSearchManager"
 require "Foraging/ISZoneDisplay"
 require "Foraging/ISSearchWindow"
 require "NeatRocco/NR_Utils/NR_BaseCW"
+require "NeatRocco/NR_Utils/NR_CollapseUtils"
 require "NeatRocco/NR_Utils/NR_DrawUtils"
 require "NeatRocco/NR_Config"
 require "NeatUI_Framework/NeatTool/NeatTool_3Patch"
@@ -53,15 +54,13 @@ function NR_SearchPanel:new(character)
     local manager   = ISSearchManager.getManager(character)
     local playerNum = character:getPlayerNum()
 
-    -- ISSearchWindow.new sets props (manager, character, player, title, ...) and calls :initialise()
-    -- which we override below. Vanilla position is hardcoded (x=120, y=300); we override for multi-screen.
+    -- ISSearchWindow.new sets props (manager, character, player, title, ...), the default
+    -- position (x=120, y=300) and calls :initialise(), which registers the window with
+    -- ISLayoutManager. The layout manager then restores the saved position/size (vanilla
+    -- behaviour). We no longer override x/y here, so the saved position is respected.
     local o = ISSearchWindow.new(self, manager)
     -- ISSearchWindow.new sets o.player but not o.playerNum. NR_Patch_Search reads playerNum.
     o.playerNum = playerNum
-    o.x = getPlayerScreenLeft(playerNum) + 120
-    o.y = getPlayerScreenTop(playerNum)  + 300
-    o:setX(o.x)
-    o:setY(o.y)
 
     NR_SearchPanel.players[character] = o
     ISSearchWindow.players[character] = o   -- AF (and other mods) read this to find the instance
@@ -80,9 +79,8 @@ function NR_SearchPanel:getWindowTitle()
     return getText("UI_investigate_area_window_title")
 end
 
-function NR_SearchPanel:getWindowIcon()
-    return getTexture("media/ui/NeatRocco/CategoryIcon/Icon_Search.png")
-end
+-- No getWindowIcon: the title icon is intentionally omitted to keep the header
+-- compact (collapse + info buttons on the left, close on the right).
 
 function NR_SearchPanel:getInfoText()
     return getText("SurvivalGuide_entrie11moreinfo")
@@ -106,11 +104,30 @@ function NR_SearchPanel:initialise()
 
     -- Re-skin the wide toggleSearchMode button (vanilla ISButton -> NeatUI three-patch).
     applyToggleSkin(self.toggleSearchMode)
+
+    -- Collapse/peek via NR_CollapseUtils (adds the collapse button through NR_Header).
+    NR_CollapseUtils.init(self)
+    -- The vanilla chain ran RegisterWindow -> RestoreLayout, which may have set
+    -- pin=false / collapsed from a saved layout. Reset to a clean expanded state;
+    -- collapse is now driven by NR_CollapseUtils, not the vanilla pin mechanism.
+    self.pin         = true
+    self.isCollapsed = false
+    self:clearMaxDrawHeight()
+    -- NR_Header hides the info button when it is paired with the collapse button
+    -- (the per-tab CharInfo case); our info is static, so keep it visible.
+    if self.header and self.header.infoButton then
+        self.header.infoButton:setVisible(true)
+    end
 end
 
 function NR_SearchPanel:prerender()
-    -- Skip ISCollapsableWindow.prerender (vanilla title bar + frame) — we draw our own.
-    NR_BaseCW.prerenderBody(self)
+    -- Skip ISCollapsableWindow.prerender (vanilla title bar + frame); we draw our own.
+    -- The body bg uses NinePatchTexture (absolute coords) which bypasses
+    -- setMaxDrawHeight clipping, so guard it: when collapsed, only the header
+    -- (which draws its own bg) shows.
+    if NR_CollapseUtils.isBodyVisible(self) then
+        NR_BaseCW.prerenderBody(self)
+    end
 end
 
 function NR_SearchPanel:render()
@@ -122,6 +139,7 @@ end
 function NR_SearchPanel:update()
     if not self:getIsVisible() then return end
     ISSearchWindow.update(self)
+    NR_CollapseUtils.update(self)
     local btn = self.toggleSearchMode
     if btn then
         if btn.title and btn.title ~= "" then
@@ -133,12 +151,20 @@ function NR_SearchPanel:update()
 end
 
 -- ----------------------------------------------------------------------------------------------------- --
+-- Collapse / peek (delegated to NR_CollapseUtils; NR_Header wires the collapse button)
+-- ----------------------------------------------------------------------------------------------------- --
+
+function NR_SearchPanel:onClickCollapse() NR_CollapseUtils.onClickCollapse(self) end
+function NR_SearchPanel:_onHeaderHover()  NR_CollapseUtils.onHeaderHover(self)   end
+
+-- ----------------------------------------------------------------------------------------------------- --
 -- Close
 -- ----------------------------------------------------------------------------------------------------- --
 
 function NR_SearchPanel:close()
-    NR_SearchPanel.players[self.character] = nil
-    ISSearchWindow.players[self.character] = nil
+    -- Like vanilla ISSearchWindow:close: only hide, keep the instance alive so its
+    -- position is preserved on reopen. Real teardown happens on player death and
+    -- mod disable via NR_destroySearchUI.
     self:setVisible(false)
     self:removeFromUIManager()
     if JoypadState.players[self.player + 1] then
