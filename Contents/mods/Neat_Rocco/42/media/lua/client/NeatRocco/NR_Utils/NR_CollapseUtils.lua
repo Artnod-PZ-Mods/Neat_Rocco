@@ -134,8 +134,11 @@ function NR_CollapseUtils.onClickCollapse(panel)
         _showBody(panel)
         _setButton(panel, ICON_EXPANDED, true)
     else
-        panel._isCollapsed = true
-        _hideBody(panel)
+        -- Vanilla collapse() = pin=false: arm auto-collapse, do NOT hide now.
+        -- The body stays shown until the mouse leaves the panel, then
+        -- _handleMouseMoveOutside collapses it after the threshold.
+        panel._isCollapsed   = true
+        panel._collapseTimer = 0
         _setButton(panel, ICON_COLLAPSED, false)
     end
 end
