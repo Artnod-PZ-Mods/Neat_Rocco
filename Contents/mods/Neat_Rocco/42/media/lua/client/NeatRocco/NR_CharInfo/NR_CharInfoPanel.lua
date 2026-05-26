@@ -390,12 +390,18 @@ function NR_CharInfoPanel:createChildren()
     --    width clamp) by calling prevSetWidth instead of bypassing to ISUIElement.
     local prevSetWidth = self.setWidth
     self.setWidth = function(panel, w)
+        local oldW = panel.width
         prevSetWidth(panel, w)
         if NR_CollapseUtils.isBodyVisible(panel) and panel.header and panel.tabBar then
             local actualW = panel.width  -- read after prevSetWidth (may have clamped)
-            panel.tabBar:setWidth(actualW)
-            panel.header:setWidth(actualW)
-            panel.header:calculateLayout(actualW, NR_Config.headerHeight)
+            -- Only recalc when the width actually changed. Hosted vanilla sub-panels
+            -- (ISCharacterScreen:render, ISHealthPanel:update) call setWidth every frame;
+            -- calculateLayout is ~0.1ms and would run ~60x/s for nothing without this gate.
+            if actualW ~= oldW then
+                panel.tabBar:setWidth(actualW)
+                panel.header:setWidth(actualW)
+                panel.header:calculateLayout(actualW, NR_Config.headerHeight)
+            end
         end
     end
 
