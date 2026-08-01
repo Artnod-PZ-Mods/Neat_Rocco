@@ -1,7 +1,7 @@
 version=1
 id=3723726293
 title=Neat Rocco's UI [B42]
-description=[h2]Build Support: B42.17 to B42.18 - Build 42 only[/h2]
+description=[h2]Build Support: B42.17 to B42.19 - Build 42 only[/h2]
 description=(Build 42 only: Singleplayer tested / Multiplayer not tested)
 description=
 description=Redesigns in-game vanilla menus with a clean, modern interface inspired by the NeatUI style. Icon buttons, consistent colors, and a layout that stays out of your way.

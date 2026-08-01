@@ -6,6 +6,6 @@ description=Redesigns in-game vanilla menus to match the NeatUI theme.
 author=ArtNod
 modversion=1.0.9
 versionMin=42.15
-versionMax=42.18
+versionMax=42.19
 incompatible=\Neat_Livestock,\Neat_ButcherHook,\Neat_Hutch,\Neat_Generator,\NeatBake
 require=\NeatUI_Framework
