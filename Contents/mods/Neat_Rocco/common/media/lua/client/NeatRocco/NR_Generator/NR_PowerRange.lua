@@ -71,7 +71,9 @@ local function addGen(obj)
     local sq = obj:getSquare(); if not sq then return end
     local x, y, z = sq:getX(), sq:getY(), sq:getZ()
     local k = key3(x, y, z)
-    if PR._registryByKey[k] then return end
+    -- Known position: refresh the object reference (chunk reload streams a new
+    -- IsoGenerator instance; keeping the stale one would freeze its on/off state)
+    if PR._registryByKey[k] then PR._registryByKey[k].obj = obj; return end
     local entry = { obj = obj, x = x, y = y, z = z, _lastState = nil }
     table.insert(PR._registry, entry)
     PR._registryByKey[k] = entry
