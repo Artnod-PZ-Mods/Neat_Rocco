@@ -226,9 +226,13 @@ function NR_RoostPanel:configJoypad()
     self.joypadIndex  = 1
     self.joypadButtonsY = {}
     self.joypadButtons  = {}
+    -- The first call comes from the vanilla createChildren chain, BEFORE our NI buttons
+    -- exist — fall back to the vanilla buttons (our own configJoypad call at the end of
+    -- createChildren rebinds everything to the NI buttons once they are created)
     if self.closedDoorPanel:isVisible() then
-        self:insertNewLineOfButtons(self._nrOpenDoorBtn)
-        self:setISButtonForX(self._nrOpenDoorBtn)
+        local openBtn = self._nrOpenDoorBtn or self.openDoorBtn
+        self:insertNewLineOfButtons(openBtn)
+        self:setISButtonForX(openBtn)
     else
         local boxPerRow  = 5
         local joypadBtns = {}
@@ -242,11 +246,11 @@ function NR_RoostPanel:configJoypad()
         if #joypadBtns > 0 then
             self:insertNewListOfButtons(joypadBtns)
         end
-        self:setISButtonForY(self._nrCleanBtn)
+        self:setISButtonForY(self._nrCleanBtn or self.birdPooCleanBtn)
         for _, nrBtn in ipairs(self._nrModBtns) do
             self:setISButtonForY(nrBtn)
         end
-        self:setISButtonForX(self._nrDoorBtn)
+        self:setISButtonForX(self._nrDoorBtn or self.doorBtn)
     end
     self:restoreJoypadFocus(joypadData)
 end
