@@ -221,6 +221,63 @@ function NR_FitnessPanel:initialise()
 
     self:insertNewLineOfButtons(self.neatBtnTimeUp, self.neatBtnTimeDown)
     self:insertNewLineOfButtons(self.neatBtnCancel, self.neatBtnOK)
+
+    -- Stack mod-added widgets (created during the early instantiate above) at the bottom
+    self:_layoutModWidgets()
+end
+
+-- ----------------------------------------------------------------------------------------------------- --
+-- createChildren — vanilla chain (mod wrappers run here), then generic mod-widget area
+-- ----------------------------------------------------------------------------------------------------- --
+
+-- Mods add widgets to the fitness window by wrapping ISFitnessUI.createChildren
+-- (e.g. extra tickboxes) and position them in a wrapped prerender. Our prerender
+-- replaces the vanilla one entirely, so their positioning never runs. Instead of
+-- per-mod compat code, stack every unknown child in a dedicated area at the
+-- bottom of the panel and grow the window to fit.
+--
+-- Timing: the vanilla initialise addChilds its widgets, which instantiates the
+-- panel and fires createChildren at the very START of our initialise (before our
+-- layout and widgets exist). So the actual stacking runs at the END of initialise
+-- via _layoutModWidgets(); createChildren also calls it (guarded, idempotent) to
+-- cover flows where instantiate happens after initialise.
+function NR_FitnessPanel:createChildren()
+    ISFitnessUI.createChildren(self)   -- dynamic lookup: runs any mod wrapper
+    self:_layoutModWidgets()
+end
+
+function NR_FitnessPanel:_layoutModWidgets()
+    local L = self._layout
+    if not L or not self.header then return end   -- our own widgets not built yet
+
+    local known = {
+        [self.ok] = true, [self.cancel] = true, [self._vanillaCloseBtn] = true,
+        [self.exercises] = true, [self.timeLbl] = true, [self.exeTime] = true,
+        [self.plusBtn] = true, [self.minusBtn] = true, [self.tooltipLbl] = true,
+        [self.exeScrollView] = true, [self.header] = true,
+        [self.neatBtnTimeUp] = true, [self.neatBtnTimeDown] = true,
+        [self.neatBtnOK] = true, [self.neatBtnCancel] = true,
+    }
+
+    -- self.children is indexed by creation ID: collect then sort for a stable order
+    local modWidgets = {}
+    for id, child in pairs(self.children) do
+        if not known[child] and child:isVisible() then
+            table.insert(modWidgets, { id = id, child = child })
+        end
+    end
+    if #modWidgets == 0 then return end
+    table.sort(modWidgets, function(a, b) return a.id < b.id end)
+
+    -- Idempotent: always restack from the base layout height
+    local pad = NR_Config.padding
+    local y   = L.h
+    for _, entry in ipairs(modWidgets) do
+        entry.child:setX(pad)
+        entry.child:setY(y)
+        y = y + entry.child:getHeight() + 2
+    end
+    self:setHeight(y + pad)
 end
 
 -- ----------------------------------------------------------------------------------------------------- --
