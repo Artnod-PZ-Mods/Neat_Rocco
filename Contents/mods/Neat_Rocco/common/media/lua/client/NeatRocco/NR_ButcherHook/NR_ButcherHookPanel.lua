@@ -753,7 +753,10 @@ end
 -- ----------------------------------------------------------------------------------------------------- --
 
 function NR_ButcherHookPanel:close()
-    self.hook:setLuaHook(nil)
+    -- MP: the hook can be a desynced/stale object that no longer exposes setLuaHook
+    if self.hook and self.hook.setLuaHook then
+        self.hook:setLuaHook(nil)
+    end
     NR_ButcherHookPanel.ui[self.playerNum] = nil
     self:closeBase()
 end
